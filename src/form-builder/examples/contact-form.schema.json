@@ -1,0 +1,223 @@
+{
+  "id": "contact-form",
+  "version": 1,
+  "formType": "antd-form",
+  "title": "Thông tin cá nhân",
+  "description": "Vui lòng điền thông tin vào biểu mẫu.",
+  "layout": {
+    "labelPosition": "top",
+    "gutter": 16,
+    "groups": [
+      {
+        "id": "contact",
+        "title": "Thông tin liên hệ",
+        "sections": [
+          {
+            "id": "contact-details",
+            "title": "Thông tin liên hệ",
+            "description": "Thông tin cơ bản để chúng tôi có thể liên hệ.",
+            "layout": {
+              "direction": "horizontal",
+              "columns": 2,
+              "gutter": 16
+            },
+            "fields": [
+              "fullName",
+              "email",
+              "address",
+              "showPhoneNumber",
+              "phoneNumber",
+              "agreeToTerms"
+            ]
+          }
+        ],
+        "action": {
+          "layout": {
+            "direction": "horizontal",
+            "columns": 4,
+            "gutter": 16
+          },
+          "display": [
+            "reset", "next"
+          ]
+        }
+      },
+      {
+        "id": "personal",
+        "title": "Thông tin cá nhân",
+        "sections": [
+          {
+            "id": "personal-details",
+            "title": "Thông tin cá nhân",
+            "description": "Một số thông tin bổ sung về bạn.",
+            "layout": {
+              "direction": "horizontal",
+              "columns": 2,
+              "gutter": 16
+            },
+            "fields": [
+              "fullName",
+              "dateOfBirth"
+            ]
+          }
+        ],
+        "action": {
+          "layout": {
+            "direction": "horizontal",
+            "columns": 4,
+            "gutter": 16
+          },
+          "display": [
+            "reset", "submit"
+          ]
+        }
+      }
+    ]
+  },
+  "fields": {
+    "fullName": {
+      "useComponent": "input",
+      "label": "Họ và tên",
+      "placeholder": "Nhập họ và tên",
+      "validations": [
+        {
+          "rule": "required",
+          "message": "Vui lòng nhập họ và tên"
+        },
+        {
+          "rule": "minLength",
+          "value": 2,
+          "message": "Họ và tên phải có ít nhất 2 ký tự"
+        },
+        {
+          "rule": "maxLength",
+          "value": 100,
+          "message": "Họ và tên không được vượt quá 100 ký tự"
+        }
+      ],
+      "value": "@values.fullName"
+    },
+    "email": {
+      "useComponent": "input",
+      "label": "Email",
+      "placeholder": "example@email.com",
+      "validations": [
+        {
+          "rule": "required",
+          "message": "Vui lòng nhập email"
+        },
+        {
+          "rule": "email",
+          "message": "Email không hợp lệ"
+        }
+      ],
+      "value": "@values.email"
+    },
+    "address": {
+      "useComponent": "input",
+      "label": "Địa chỉ",
+      "placeholder": "Nhập địa chỉ",
+      "value": "@values.address"
+    },
+    "showPhoneNumber": {
+      "useComponent": "checkbox",
+      "label": "Hiển thị số điện thoại",
+      "value": false
+    },
+    "phoneNumber": {
+      "useComponent": "phone",
+      "label": "Số điện thoại",
+      "placeholder": "Nhập số điện thoại",
+      "props": {
+        "type": "tel"
+      },
+      "value": "@values.phoneNumber",
+      "validations": [
+        {
+          "rule": "required",
+          "message": "Vui lòng nhập số điện thoại"
+        },
+        {
+          "rule": "phone",
+          "message": "Số điện thoại không hợp lệ"
+        }
+      ],
+      "when": [
+        {
+          "name": "showPhoneNumber",
+          "operator": "notEquals",
+          "value": true,
+          "action": {
+            "display": "hide",
+            "resetValue": true
+          }
+        },
+        {
+          "name": "showPhoneNumber",
+          "operator": "equals",
+          "value": true,
+          "action": {
+            "focus": true
+          }
+        }
+      ]
+    },
+    "agreeToTerms": {
+      "useComponent": "checkbox",
+      "label": "Tôi đồng ý với các điều khoản",
+      "value": "@values.agreeToTerms",
+      "validations": [
+        {
+          "rule": "required",
+          "message": "Bạn cần đồng ý với các điều khoản"
+        }
+      ]
+    },
+    "dateOfBirth": {
+      "useComponent": "date-picker",
+      "label": "Ngày tháng năm sinh",
+      "props": {
+        "type": "date"
+      },
+      "validations": [
+        {
+          "rule": "required",
+          "message": "Vui lòng chọn ngày sinh"
+        },
+        {
+          "rule": "date",
+          "message": "Ngày sinh không hợp lệ"
+        }
+      ],
+      "value": "@values.dateOfBirth"
+    }
+  },
+  "actions": [
+    {
+      "id": "submit",
+      "type": "submit",
+      "label": "Gửi",
+      "placement": "primary",
+      "validateBeforeRun": true,
+      "useComponent": "button",
+      "props": {
+        "type": "primary"
+      }
+    },
+    {
+      "id": "reset",
+      "type": "reset",
+      "label": "Làm mới",
+      "useComponent": "button"
+    },
+    {
+      "id": "next",
+      "type": "custom",
+      "label": "Tiếp theo",
+      "placement": "primary",
+      "validateBeforeRun": true,
+      "validationGroups": ["contact"],
+      "useComponent": "button"
+    }
+  ]
+}
