@@ -216,6 +216,11 @@ input {
   font-weight: 600;
 }
 
+.form-builder-label__required {
+  margin-left: 4px;
+  color: #c62828;
+}
+
 .form-builder-field input:not([type="checkbox"]),
 .form-builder-field textarea,
 .form-builder-field select {

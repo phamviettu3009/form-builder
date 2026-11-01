@@ -3,6 +3,7 @@ import type {
   FormField,
   FormGroup,
   ResolvedFormSection,
+  ResolvedFormSectionItem,
 } from "./form/FormBuilder";
 
 export class SchemaExtractor {
@@ -16,39 +17,43 @@ export class SchemaExtractor {
     const fieldsByName = new Map<string, FormField>(
       Object.entries(schema.fields).map(([name, field]) => [name, { ...field, name }]),
     );
+    const actionsById = new Map((schema.actions ?? []).map((action) => [action.id, action]));
     const usedFieldNames = new Set<string>();
     this.groups = (schema.layout?.groups ?? []).map((group) => ({
       ...group,
-      sections: group.sections.map((section) => ({
-        ...section,
-        fields: section.fields.map((fieldName) => {
-          const field = fieldsByName.get(fieldName);
+      sections: group.sections.map((section) => {
+        const items: ResolvedFormSectionItem[] = section.fields.map(({ name, type, column, span }) => {
+          if (type === "action") {
+            const action = actionsById.get(name);
+            if (!action) {
+              throw new Error(
+                `Action "${name}" referenced by section "${section.id}" was not defined in schema.actions`,
+              );
+            }
+            return { type: "action", action, column, span };
+          }
+          const field = fieldsByName.get(name);
           if (!field) {
             throw new Error(
-              `Field "${fieldName}" referenced by section "${section.id}" was not defined in schema.fields`,
+              `Field "${name}" referenced by section "${section.id}" was not defined in schema.fields`,
             );
           }
-          usedFieldNames.add(fieldName);
-          return field;
-        }),
-      })),
+          usedFieldNames.add(name);
+          return { type: "field", field: { ...field, column, span } };
+        });
+        return {
+          ...section,
+          items,
+          fields: items.flatMap((item) => item.type === "field" ? [item.field] : []),
+        };
+      }),
     }));
-    const actionIds = new Set((schema.actions ?? []).map((action) => action.id));
     const groupIds = new Set(this.groups.map((group) => group.id));
     for (const action of schema.actions ?? []) {
       for (const groupId of action.validationGroups ?? []) {
         if (!groupIds.has(groupId)) {
           throw new Error(
             `Validation group "${groupId}" referenced by action "${action.id}" was not defined in layout.groups`,
-          );
-        }
-      }
-    }
-    for (const group of this.groups) {
-      for (const actionId of group.action?.display ?? []) {
-        if (!actionIds.has(actionId)) {
-          throw new Error(
-            `Action "${actionId}" displayed by group "${group.id}" was not defined in schema.actions`,
           );
         }
       }

@@ -2,8 +2,8 @@
   "id": "admission-registration",
   "version": 1,
   "formType": "antd-form",
-  "title": "Đăng ký tuyển sinh",
-  "description": "Hoàn thành biểu mẫu qua 3 bước để gửi hồ sơ đăng ký tuyển sinh.",
+  "title": "",
+  "description": "",
   "layout": {
     "labelPosition": "top",
     "gutter": 16,
@@ -22,25 +22,40 @@
               "gutter": 16
             },
             "fields": [
-              "applicantName",
-              "dateOfBirth",
-              "gender",
-              "citizenId",
-              "applicantEmail",
-              "applicantPhone"
+              { "name": "applicantName" },
+              { "name": "dateOfBirth" },
+              { "name": "gender" },
+              { "name": "citizenId" },
+              { "name": "applicantPhone" }
+            ]
+          },
+          {
+            "id": "applicant-information-section-2",
+            "title": "",
+            "description": "",
+            "layout": {
+              "direction": "horizontal",
+              "columns": 2,
+              "gutter": 16
+            },
+            "fields": [
+              { "name": "applicantEmail", "column": 2, "span": 1 }
+            ]
+          },
+          {
+            "id": "applicant-information-actions",
+            "title": "",
+            "description": "",
+            "layout": {
+              "direction": "horizontal",
+              "columns": 3,
+              "gutter": 16
+            },
+            "fields": [
+              { "type": "action", "name": "nextToGuardian", "column": 3, "span": 1 }
             ]
           }
-        ],
-        "action": {
-          "layout": {
-            "direction": "horizontal",
-            "columns": 2,
-            "gutter": 12
-          },
-          "display": [
-            "nextToGuardian"
-          ]
-        }
+        ]
       },
       {
         "id": "guardian",
@@ -56,25 +71,26 @@
               "gutter": 16
             },
             "fields": [
-              "guardianName",
-              "guardianRelationship",
-              "guardianPhone",
-              "guardianEmail",
-              "guardianAddress"
+              { "name": "guardianName" },
+              { "name": "guardianRelationship" },
+              { "name": "guardianPhone" },
+              { "name": "guardianEmail" },
+              { "name": "guardianAddress" }
+            ]
+          },
+          {
+            "id": "guardian-actions",
+            "layout": {
+              "direction": "horizontal",
+              "columns": 4,
+              "gutter": 16
+            },
+            "fields": [
+              { "type": "action", "name": "backToApplicant", "column": 3, "span": 1 },
+              { "type": "action", "name": "nextToProgram", "column": 4, "span": 1 }
             ]
           }
-        ],
-        "action": {
-          "layout": {
-            "direction": "horizontal",
-            "columns": 3,
-            "gutter": 12
-          },
-          "display": [
-            "backToApplicant",
-            "nextToProgram"
-          ]
-        }
+        ]
       },
       {
         "id": "program",
@@ -90,26 +106,27 @@
               "gutter": 16
             },
             "fields": [
-              "schoolYear",
-              "educationLevel",
-              "firstChoice",
-              "previousSchool",
-              "additionalInformation",
-              "agreeToDeclaration"
+              { "name": "schoolYear" },
+              { "name": "educationLevel" },
+              { "name": "firstChoice" },
+              { "name": "previousSchool" },
+              { "name": "additionalInformation" },
+              { "name": "agreeToDeclaration" }
+            ]
+          },
+          {
+            "id": "program-actions",
+            "layout": {
+              "direction": "horizontal",
+              "columns": 2,
+              "gutter": 16
+            },
+            "fields": [
+              { "type": "action", "name": "backToGuardian", "column": 1, "span": 1 },
+              { "type": "action", "name": "submit", "column": 2, "span": 1 }
             ]
           }
-        ],
-        "action": {
-          "layout": {
-            "direction": "horizontal",
-            "columns": 3,
-            "gutter": 12
-          },
-          "display": [
-            "backToGuardian",
-            "submit"
-          ]
-        }
+        ]
       }
     ]
   },
@@ -118,7 +135,13 @@
       "useComponent": "input",
       "label": "Họ và tên thí sinh",
       "placeholder": "Nhập họ và tên",
+      "required": true,
       "value": "@values.applicantName",
+      "liveValidation": {
+        "active": true,
+        "debounce": 300,
+        "trigger": "onChange"
+      },
       "validations": [
         {
           "rule": "required",
@@ -155,20 +178,7 @@
       "useComponent": "select",
       "label": "Giới tính",
       "placeholder": "Chọn giới tính",
-      "options": [
-        {
-          "label": "Nam",
-          "value": "male"
-        },
-        {
-          "label": "Nữ",
-          "value": "female"
-        },
-        {
-          "label": "Khác",
-          "value": "other"
-        }
-      ],
+      "options": "@options.gender",
       "validations": [
         {
           "rule": "required",

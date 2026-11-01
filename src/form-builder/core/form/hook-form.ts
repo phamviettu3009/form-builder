@@ -10,6 +10,7 @@ import type {
   FormAction,
   FormBuilderSchema,
   FormField,
+  FormFieldOption,
 } from "./schema";
 
 interface UseFormBuilderOptions {
@@ -188,6 +189,7 @@ export function useFormBuilder(schema: FormBuilderSchema, options: UseFormBuilde
     ),
   );
   const [values, setValues] = useState<Record<string, unknown>>(initialValues);
+  const [optionOverrides, setOptionOverrides] = useState<Record<string, FormFieldOption[]>>({});
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submittedValues, setSubmittedValues] = useState<Record<string, unknown>>();
   const [submitError, setSubmitError] = useState<string>();
@@ -197,6 +199,16 @@ export function useFormBuilder(schema: FormBuilderSchema, options: UseFormBuilde
   const cancelledSubmitAction = useRef<string | undefined>(undefined);
   const didRequestInitialFocusGroup = useRef(false);
   const matchedResetConditions = useRef(getMatchedConditionKeys(fields, initialValues));
+  const previousMappedValues = useRef(new Map(
+    fields
+      .filter((field) => typeof field.value === "string" && field.value.startsWith("@"))
+      .map((field) => [field.name, {
+        reference: field.value,
+        value: resolveFieldValue(field.value, mapper),
+      }]),
+  ));
+  const liveValues = useRef(values);
+  const liveValidationTimers = useRef(new Map<string, number>());
   const [focusRequest, setFocusRequest] = useState(() =>
     initialFocusField ? { fieldName: initialFocusField.name, version: 0 } : undefined,
   );
@@ -204,12 +216,93 @@ export function useFormBuilder(schema: FormBuilderSchema, options: UseFormBuilde
     fields.map((field) => [field.name, getFieldActions(field.when, values)]),
   );
   const activeGroup = groups.find((group) => group.id === activeGroupId);
-  const displayedActions = (activeGroup?.action?.display ?? []).flatMap((actionId) => {
-    const action = schema.actions?.find((item) => item.id === actionId);
-    return action ? [action] : [];
-  });
+  const getFieldOptions = (field: FormField) => {
+    const plugin = pluginRegistry.getPluginByName(field.useComponent, "component");
+    if (plugin.componentBinding?.supportsOptions && Object.hasOwn(optionOverrides, field.name)) {
+      return optionOverrides[field.name];
+    }
+    const resolved = resolveFieldValue(field.options, mapper);
+    return Array.isArray(resolved) ? resolved : undefined;
+  };
+
+  const setFieldOptions = (fieldName: string, options: FormFieldOption[]) => {
+    const field = fields.find((item) => item.name === fieldName);
+    if (!field) {
+      throw new Error(`Unknown field: ${fieldName}`);
+    }
+    const plugin = pluginRegistry.getPluginByName(field.useComponent, "component");
+    if (!plugin.componentBinding?.supportsOptions) {
+      throw new Error(`Field "${fieldName}" does not support options`);
+    }
+    if (!Array.isArray(options)) {
+      throw new Error("Options must be an array");
+    }
+    setOptionOverrides((current) => ({
+      ...current,
+      [fieldName]: options.map((option) => ({ ...option })),
+    }));
+  };
+
+  useLayoutEffect(() => {
+    liveValues.current = values;
+  }, [values]);
+
+  useEffect(() => {
+    const timers = liveValidationTimers.current;
+    return () => {
+      for (const timeout of timers.values()) {
+        window.clearTimeout(timeout);
+      }
+      timers.clear();
+    };
+  }, [activeGroupId, schemaExtractor]);
+
+  const cancelLiveValidations = () => {
+    for (const timeout of liveValidationTimers.current.values()) {
+      window.clearTimeout(timeout);
+    }
+    liveValidationTimers.current.clear();
+  };
+
+  const scheduleLiveValidation = (groupId: string, name: string, trigger: "onChange" | "onBlur") => {
+    const field = fields.find((item) => item.name === name);
+    const config = field?.liveValidation;
+    if (trigger === "onBlur" && (!config?.active || (config.trigger ?? "onChange") !== trigger)) {
+      return;
+    }
+    const key = getValidationErrorKey(groupId, name);
+    const pending = liveValidationTimers.current.get(key);
+    if (pending !== undefined) {
+      window.clearTimeout(pending);
+      liveValidationTimers.current.delete(key);
+    }
+    if (!field || !config?.active || (config.trigger ?? "onChange") !== trigger) {
+      return;
+    }
+    const delay = Number.isFinite(config.debounce) ? Math.max(0, config.debounce ?? 0) : 0;
+    const timeout = window.setTimeout(() => {
+      liveValidationTimers.current.delete(key);
+      const currentValues = liveValues.current;
+      const actions = getFieldActions(field.when, currentValues);
+      const error = actions.display === "show" && !actions.disabled && !actions.ignoreValidation
+        ? validator.getFieldError(field, currentValues[name], currentValues)
+        : undefined;
+      setErrors((currentErrors) => {
+        const nextErrors = { ...currentErrors };
+        if (error) {
+          nextErrors[key] = error;
+        } else {
+          delete nextErrors[key];
+        }
+        return nextErrors;
+      });
+    }, delay);
+    liveValidationTimers.current.set(key, timeout);
+  };
 
   const resetForm = () => {
+    cancelLiveValidations();
+    liveValues.current = initialValues;
     setValues(initialValues);
     matchedResetConditions.current = getMatchedConditionKeys(fields, initialValues);
     setErrors({});
@@ -233,6 +326,7 @@ export function useFormBuilder(schema: FormBuilderSchema, options: UseFormBuilde
     fieldsToValidate: ValidationTarget[],
     replaceErrors: boolean,
   ): boolean => {
+    cancelLiveValidations();
     const nextErrors: Record<string, string> = {};
     for (const { groupId, field } of fieldsToValidate) {
       if (
@@ -271,8 +365,8 @@ export function useFormBuilder(schema: FormBuilderSchema, options: UseFormBuilde
     return false;
   };
 
-  const updateField = (name: string, value: unknown) => {
-    const nextValues = { ...values, [name]: value };
+  const updateFields = (updates: Record<string, unknown>) => {
+    const nextValues = { ...liveValues.current, ...updates };
     const matchedConditions = getMatchedConditionKeys(fields, nextValues);
     const fieldsToReset = new Set<string>();
     let fieldToFocus: string | undefined;
@@ -316,9 +410,10 @@ export function useFormBuilder(schema: FormBuilderSchema, options: UseFormBuilde
         version: (currentRequest?.version ?? 0) + 1,
       }));
     }
+    liveValues.current = nextValues;
     setValues(nextValues);
     setErrors((currentErrors) => {
-      const fieldsWithErrorsToClear = new Set([name, ...fieldsToReset]);
+      const fieldsWithErrorsToClear = new Set([...Object.keys(updates), ...fieldsToReset]);
       const keysToClear = Object.keys(currentErrors).filter((key) => {
         const [, fieldName] = JSON.parse(key) as [string, string];
         return fieldsWithErrorsToClear.has(fieldName);
@@ -334,6 +429,33 @@ export function useFormBuilder(schema: FormBuilderSchema, options: UseFormBuilde
     });
     setSubmittedValues(undefined);
     setSubmitError(undefined);
+  };
+
+  const updateField = (name: string, value: unknown) => {
+    updateFields({ [name]: value });
+  };
+
+  const resetField = (name: string) => {
+    if (!Object.hasOwn(initialValues, name)) {
+      throw new Error(`Unknown field: ${name}`);
+    }
+    for (const [key, timeout] of liveValidationTimers.current) {
+      const [, fieldName] = JSON.parse(key) as [string, string];
+      if (fieldName === name) {
+        window.clearTimeout(timeout);
+        liveValidationTimers.current.delete(key);
+      }
+    }
+    updateField(name, initialValues[name]);
+  };
+
+  const handleFieldChange = (groupId: string, name: string, value: unknown) => {
+    updateField(name, value);
+    scheduleLiveValidation(groupId, name, "onChange");
+  };
+
+  const handleFieldBlur = (groupId: string, name: string) => {
+    scheduleLiveValidation(groupId, name, "onBlur");
   };
 
   const getValidationGroups = (action: FormAction) =>
@@ -373,8 +495,7 @@ export function useFormBuilder(schema: FormBuilderSchema, options: UseFormBuilde
     ) {
       eventOrValues.preventDefault();
     }
-    const action =
-      activeAction.current ?? displayedActions.find((item) => item.type === "submit");
+    const action = activeAction.current;
     activeAction.current = undefined;
     if (!action) {
       return;
@@ -413,22 +534,29 @@ export function useFormBuilder(schema: FormBuilderSchema, options: UseFormBuilde
   useEffect(() => {
     const mappedEntries = fields
       .filter((field) => typeof field.value === "string" && field.value.startsWith("@"))
-      .map((field) => [field.name, resolveFieldValue(field.value, mapper)] as const);
-    if (mappedEntries.length === 0) {
-      return;
-    }
-    const nextValues = { ...values };
+      .map((field) => [field.name, {
+        reference: field.value,
+        value: resolveFieldValue(field.value, mapper),
+      }] as const);
+    const nextValues = { ...liveValues.current };
     const changedFieldNames: string[] = [];
-    for (const [name, value] of mappedEntries) {
-      if (!Object.is(values[name], value)) {
-        nextValues[name] = value;
+    for (const [name, mapped] of mappedEntries) {
+      const previous = previousMappedValues.current.get(name);
+      if (
+        (!previous || previous.reference !== mapped.reference || !Object.is(previous.value, mapped.value)) &&
+        !Object.is(nextValues[name], mapped.value)
+      ) {
+        nextValues[name] = mapped.value;
         changedFieldNames.push(name);
       }
     }
+    previousMappedValues.current = new Map(mappedEntries);
     if (changedFieldNames.length === 0) {
       return;
     }
+    cancelLiveValidations();
     matchedResetConditions.current = getMatchedConditionKeys(fields, nextValues);
+    liveValues.current = nextValues;
     // Synchronize mapper props into the editable form state.
     // oxlint-disable-next-line react/set-state-in-effect
     setValues(nextValues);
@@ -503,6 +631,7 @@ export function useFormBuilder(schema: FormBuilderSchema, options: UseFormBuilde
     control.connect(
       {
         values,
+        initialValues,
         errors: controlErrors,
         fieldStates,
         groups: groups.map(({ id, title }) => ({ id, title })),
@@ -510,6 +639,9 @@ export function useFormBuilder(schema: FormBuilderSchema, options: UseFormBuilde
       },
       {
         setValue: updateField,
+        setValues: updateFields,
+        resetField,
+        setOptions: setFieldOptions,
         validate: () => validateFields(getFieldsForGroups(groups), true),
         validateField: (fieldName, groupId) => {
           const targetGroups = groupId
@@ -554,7 +686,6 @@ export function useFormBuilder(schema: FormBuilderSchema, options: UseFormBuilde
     groups,
     fields,
     activeGroup,
-    displayedActions,
     fieldActions,
     values,
     errors,
@@ -565,8 +696,10 @@ export function useFormBuilder(schema: FormBuilderSchema, options: UseFormBuilde
     formComponent: formPlugin.class,
     formProps,
     getComponentByType,
+    getFieldOptions,
     getActionComponent,
     handleAction,
-    updateField,
+    handleFieldChange,
+    handleFieldBlur,
   };
 }

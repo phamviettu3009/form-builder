@@ -13,9 +13,12 @@ export type {
   FormBuilderSchema,
   FormField,
   FormFieldDefinition,
+  FormFieldOption,
   FormGroup,
   FormSection,
+  FormSectionField,
   ResolvedFormSection,
+  ResolvedFormSectionItem,
 } from "./schema";
 
 interface FormBuilderProps {
@@ -39,7 +42,6 @@ export function FormBuilder({
 }: FormBuilderProps) {
   const {
     activeGroup,
-    displayedActions,
     fieldActions,
     values,
     errors,
@@ -50,9 +52,11 @@ export function FormBuilder({
     formComponent: FormComponent,
     formProps,
     getComponentByType,
+    getFieldOptions,
     getActionComponent,
     handleAction,
-    updateField,
+    handleFieldChange,
+    handleFieldBlur,
   } = useFormBuilder(schema, {
     activeGroupId,
     onActiveGroupChange,
@@ -79,10 +83,10 @@ export function FormBuilder({
         {activeGroup && (
           <div id={`tabpanel-${activeGroup.id}`} role="tabpanel" className="form-builder-group">
             {activeGroup.sections.map((section) => {
-              const visibleFields = section.fields.filter(
-                (field) => fieldActions[field.name].display !== "remove",
+              const visibleItems = section.items.filter(
+                (item) => item.type === "action" || fieldActions[item.field.name].display !== "remove",
               );
-              if (visibleFields.length === 0) {
+              if (visibleItems.length === 0) {
                 return null;
               }
 
@@ -92,19 +96,37 @@ export function FormBuilder({
                   section={section}
                   gutter={section.layout?.gutter ?? schema.layout?.gutter ?? 16}
                 >
-                  {visibleFields.map((field) => {
+                  {visibleItems.map((item) => {
+                    if (item.type === "action") {
+                      return (
+                        <FormActions
+                          key={`action:${item.action.id}`}
+                          actions={[item.action]}
+                          column={section.layout?.direction === "vertical" ? undefined : item.column}
+                          span={section.layout?.direction === "vertical" ? undefined : item.span}
+                          submitting={submitting}
+                          getActionComponent={getActionComponent}
+                          onAction={handleAction}
+                        />
+                      );
+                    }
+                    const field = item.field;
                     const component = getComponentByType(field.useComponent);
                     return (
                       <FormFieldRenderer
-                        key={field.name}
+                        key={`field:${field.name}`}
                         field={field}
+                        column={section.layout?.direction === "vertical" ? undefined : field.column}
+                        span={section.layout?.direction === "vertical" ? undefined : field.span}
                         component={component.component}
                         binding={component.binding}
+                        options={getFieldOptions(field)}
                         value={values[field.name]}
                         error={errors[JSON.stringify([activeGroup.id, field.name])]}
                         disabled={fieldActions[field.name].disabled}
                         hidden={fieldActions[field.name].display === "hide"}
-                        onChange={(value) => updateField(field.name, value)}
+                        onChange={(value) => handleFieldChange(activeGroup.id, field.name, value)}
+                        onBlur={() => handleFieldBlur(activeGroup.id, field.name)}
                       />
                     );
                   })}
@@ -123,13 +145,6 @@ export function FormBuilder({
             {submitError}
           </p>
         )}
-        <FormActions
-          actions={displayedActions}
-          layout={activeGroup?.action?.layout}
-          submitting={submitting}
-          getActionComponent={getActionComponent}
-          onAction={handleAction}
-        />
       </FormComponent>
       {submittedValues && (
         <section className="form-builder-result" aria-live="polite">

@@ -6,6 +6,9 @@ export type RuleConstructor = new () => Rule;
 export interface ComponentBinding {
   valueProp?: string;
   eventValueProp?: string;
+  invalidProp?: string;
+  errorMessageProp?: string;
+  supportsOptions?: boolean;
   labelPosition?: "before" | "after";
   actionTypeProp?: string;
 }

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Typography } from 'antd'
 import admissionRegistrationSchema from './form-builder/examples/admission-registration.schema.json'
 import {
@@ -12,6 +12,13 @@ import './form-builder/plugins/validation-register'
 
 const schema = admissionRegistrationSchema as FormBuilderSchema
 const mapper = {
+  options: {
+    gender: [
+      { label: 'Nam', value: 'male' },
+      { label: 'Nữ', value: 'female' },
+      { label: 'Khác', value: 'other' },
+    ],
+  },
   values: {
     applicantName: '',
     dateOfBirth: undefined,
@@ -48,19 +55,6 @@ export default function FormPlayground() {
       </header>
 
       <section className="form-panel" aria-label="Biểu mẫu tư vấn">
-        <div className="playground-group-picker" aria-label="Chọn nhóm biểu mẫu">
-          {schema.layout?.groups.map((group) => (
-            <button
-              key={group.id}
-              type="button"
-              aria-pressed={activeGroupId === group.id}
-              className="playground-group-picker__button"
-              onClick={() => setActiveGroupId(group.id)}
-            >
-              {group.title}
-            </button>
-          ))}
-        </div>
         <FormBuilder
           schema={schema}
           activeGroupId={activeGroupId}

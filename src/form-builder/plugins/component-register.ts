@@ -1,18 +1,18 @@
 import { Button, Checkbox, DatePicker, Input, Select } from 'antd';
 import { pluginRegistry } from '../core/plugin-registry';
+import InputAnt from './components/Input';
 
 pluginRegistry.register('component', {
   name: 'input',
-  class: Input,
+  class: InputAnt,
+  componentBinding: {
+    invalidProp: '_invalid',
+    errorMessageProp: '_errorMessage',
+  },
 });
 
 pluginRegistry.register('component', {
   name: 'phone',
-  class: Input,
-});
-
-pluginRegistry.register('component', {
-  name: 'date',
   class: Input,
 });
 
@@ -24,6 +24,9 @@ pluginRegistry.register('component', {
 pluginRegistry.register('component', {
   name: 'select',
   class: Select,
+  componentBinding: {
+    supportsOptions: true,
+  },
 });
 
 pluginRegistry.register('component', {

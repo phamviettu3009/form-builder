@@ -19,15 +19,26 @@ export interface Condition {
   };
 }
 
+export interface FormFieldOption {
+  label: string;
+  value: string | number | boolean;
+}
+
 export interface FormField {
   name: string;
   useComponent: string;
   label: string;
+  required?: boolean;
   placeholder?: string;
   value?: unknown;
   props?: Record<string, unknown> | null;
-  options?: Array<{ label: string; value: string | number | boolean }>;
+  options?: FormFieldOption[] | string;
   when?: Condition[];
+  liveValidation?: {
+    active: boolean;
+    debounce?: number;
+    trigger?: "onChange" | "onBlur";
+  };
   validations?: Array<{
     rule?: string;
     type?: string;
@@ -38,6 +49,13 @@ export interface FormField {
 
 export type FormFieldDefinition = Omit<FormField, "name">;
 
+export interface FormSectionField {
+  name: string;
+  type?: "field" | "action";
+  column?: number;
+  span?: number;
+}
+
 export interface FormSection {
   id: string;
   title?: string;
@@ -47,26 +65,23 @@ export interface FormSection {
     columns?: number;
     gutter?: number;
   };
-  fields: string[];
+  fields: FormSectionField[];
 }
 
 export interface FormGroup {
   id: string;
   title: string;
   sections: FormSection[];
-  action?: {
-    layout?: {
-      direction?: "horizontal" | "vertical";
-      columns?: number;
-      gutter?: number;
-    };
-    display: string[];
-  };
 }
 
 export interface ResolvedFormSection extends Omit<FormSection, "fields"> {
-  fields: FormField[];
+  fields: Array<FormField & Pick<FormSectionField, "column" | "span">>;
+  items: ResolvedFormSectionItem[];
 }
+
+export type ResolvedFormSectionItem =
+  | { type: "field"; field: FormField & Pick<FormSectionField, "column" | "span"> }
+  | { type: "action"; action: FormAction; column?: number; span?: number };
 
 export type FormActionType = "submit" | "reset" | "custom";
 

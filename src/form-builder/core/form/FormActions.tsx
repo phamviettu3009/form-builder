@@ -11,6 +11,8 @@ interface FormActionLayout {
 interface FormActionsProps {
   actions: FormAction[];
   layout?: FormActionLayout;
+  column?: number;
+  span?: number;
   submitting: boolean;
   getActionComponent: (name: string) => {
     component: ElementType;
@@ -22,6 +24,8 @@ interface FormActionsProps {
 export function FormActions({
   actions,
   layout,
+  column,
+  span,
   submitting,
   getActionComponent,
   onAction,
@@ -38,6 +42,7 @@ export function FormActions({
       style={{
         gap: layout?.gutter ?? 12,
         gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))`,
+        gridColumn: column ? `${column} / span ${span ?? 1}` : span ? `span ${span}` : undefined,
       }}
     >
       {actions.map((action) => {
