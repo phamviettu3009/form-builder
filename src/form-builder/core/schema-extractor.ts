@@ -7,7 +7,9 @@ import type {
 } from "./form/FormBuilder";
 
 export class SchemaExtractor {
-  readonly groups: Array<Omit<FormGroup, "sections"> & { sections: ResolvedFormSection[] }>;
+  readonly groups: Array<
+    Omit<FormGroup, "sections"> & { sections: ResolvedFormSection[] }
+  >;
   readonly sections: ResolvedFormSection[];
   readonly fields: FormField[];
   readonly componentTypes: string[];
@@ -15,36 +17,45 @@ export class SchemaExtractor {
 
   constructor(schema: FormBuilderSchema) {
     const fieldsByName = new Map<string, FormField>(
-      Object.entries(schema.fields).map(([name, field]) => [name, { ...field, name }]),
+      Object.entries(schema.fields).map(([name, field]) => [
+        name,
+        { ...field, name },
+      ]),
     );
-    const actionsById = new Map((schema.actions ?? []).map((action) => [action.id, action]));
+    const actionsById = new Map(
+      (schema.actions ?? []).map((action) => [action.id, action]),
+    );
     const usedFieldNames = new Set<string>();
     this.groups = (schema.layout?.groups ?? []).map((group) => ({
       ...group,
       sections: group.sections.map((section) => {
-        const items: ResolvedFormSectionItem[] = section.fields.map(({ name, type, column, span }) => {
-          if (type === "action") {
-            const action = actionsById.get(name);
-            if (!action) {
+        const items: ResolvedFormSectionItem[] = section.fields.map(
+          ({ name, type, column, span }) => {
+            if (type === "action") {
+              const action = actionsById.get(name);
+              if (!action) {
+                throw new Error(
+                  `Action "${name}" referenced by section "${section.id}" was not defined in schema.actions`,
+                );
+              }
+              return { type: "action", action, column, span };
+            }
+            const field = fieldsByName.get(name);
+            if (!field) {
               throw new Error(
-                `Action "${name}" referenced by section "${section.id}" was not defined in schema.actions`,
+                `Field "${name}" referenced by section "${section.id}" was not defined in schema.fields`,
               );
             }
-            return { type: "action", action, column, span };
-          }
-          const field = fieldsByName.get(name);
-          if (!field) {
-            throw new Error(
-              `Field "${name}" referenced by section "${section.id}" was not defined in schema.fields`,
-            );
-          }
-          usedFieldNames.add(name);
-          return { type: "field", field: { ...field, column, span } };
-        });
+            usedFieldNames.add(name);
+            return { type: "field", field: { ...field, column, span } };
+          },
+        );
         return {
           ...section,
           items,
-          fields: items.flatMap((item) => item.type === "field" ? [item.field] : []),
+          fields: items.flatMap((item) =>
+            item.type === "field" ? [item.field] : [],
+          ),
         };
       }),
     }));
@@ -60,9 +71,12 @@ export class SchemaExtractor {
     }
     this.sections = this.groups.flatMap((group) => group.sections);
     this.fields = [...usedFieldNames].map((name) => fieldsByName.get(name)!);
-    this.componentTypes = [...new Set(this.fields.map((field) => field.useComponent))];
+    this.componentTypes = [
+      ...new Set(this.fields.map((field) => field.useComponent)),
+    ];
     this.validationFields = this.fields.filter(
-      (field) => field.validations !== undefined && field.validations.length > 0,
+      (field) =>
+        field.validations !== undefined && field.validations.length > 0,
     );
   }
 }

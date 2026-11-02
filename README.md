@@ -60,8 +60,13 @@ Core form types, field rendering, section rendering, and actions are separated i
 control.value.get("applicantName");
 control.value.getAll();
 control.value.set("applicantName", "An");
-control.value.setMany({ applicantName: "An", applicantEmail: "an@example.com" });
-const unsubscribe = control.value.watch("applicantName", (value) => console.log(value));
+control.value.setMany({
+  applicantName: "An",
+  applicantEmail: "an@example.com",
+});
+const unsubscribe = control.value.watch("applicantName", (value) =>
+  console.log(value),
+);
 control.value.isDirty("applicantName");
 control.value.resetField("applicantName");
 unsubscribe();

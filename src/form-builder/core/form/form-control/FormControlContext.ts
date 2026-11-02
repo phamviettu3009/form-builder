@@ -36,16 +36,26 @@ export class FormControlContext {
     activeGroupId: "",
   };
   private operations?: FormControlOperations;
-  private readonly valueListeners = new Set<(values: Record<string, unknown>, changed: string[]) => void>();
+  private readonly valueListeners = new Set<
+    (values: Record<string, unknown>, changed: string[]) => void
+  >();
 
-  connect(snapshot: FormControlSnapshot, operations: FormControlOperations): void {
+  connect(
+    snapshot: FormControlSnapshot,
+    operations: FormControlOperations,
+  ): void {
     const previousValues = this.snapshot.values;
     this.snapshot = snapshot;
     this.operations = operations;
-    const names = new Set([...Object.keys(previousValues), ...Object.keys(snapshot.values)]);
-    const changed = [...names].filter((name) =>
-      Object.hasOwn(previousValues, name) !== Object.hasOwn(snapshot.values, name) ||
-      !Object.is(previousValues[name], snapshot.values[name]),
+    const names = new Set([
+      ...Object.keys(previousValues),
+      ...Object.keys(snapshot.values),
+    ]);
+    const changed = [...names].filter(
+      (name) =>
+        Object.hasOwn(previousValues, name) !==
+          Object.hasOwn(snapshot.values, name) ||
+        !Object.is(previousValues[name], snapshot.values[name]),
     );
     if (changed.length > 0) {
       for (const listener of this.valueListeners) {
@@ -54,7 +64,9 @@ export class FormControlContext {
     }
   }
 
-  subscribeValues(listener: (values: Record<string, unknown>, changed: string[]) => void): () => void {
+  subscribeValues(
+    listener: (values: Record<string, unknown>, changed: string[]) => void,
+  ): () => void {
     this.valueListeners.add(listener);
     return () => this.valueListeners.delete(listener);
   }

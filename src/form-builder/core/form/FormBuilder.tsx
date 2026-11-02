@@ -75,16 +75,24 @@ export function FormBuilder({
             {schema.description && <p>{schema.description}</p>}
           </div>
           {schema.version !== undefined && (
-            <span className="form-builder-version">Phiên bản {schema.version}</span>
+            <span className="form-builder-version">
+              Phiên bản {schema.version}
+            </span>
           )}
         </header>
       )}
       <FormComponent {...formProps}>
         {activeGroup && (
-          <div id={`tabpanel-${activeGroup.id}`} role="tabpanel" className="form-builder-group">
+          <div
+            id={`tabpanel-${activeGroup.id}`}
+            role="tabpanel"
+            className="form-builder-group"
+          >
             {activeGroup.sections.map((section) => {
               const visibleItems = section.items.filter(
-                (item) => item.type === "action" || fieldActions[item.field.name].display !== "remove",
+                (item) =>
+                  item.type === "action" ||
+                  fieldActions[item.field.name].display !== "remove",
               );
               if (visibleItems.length === 0) {
                 return null;
@@ -102,8 +110,16 @@ export function FormBuilder({
                         <FormActions
                           key={`action:${item.action.id}`}
                           actions={[item.action]}
-                          column={section.layout?.direction === "vertical" ? undefined : item.column}
-                          span={section.layout?.direction === "vertical" ? undefined : item.span}
+                          column={
+                            section.layout?.direction === "vertical"
+                              ? undefined
+                              : item.column
+                          }
+                          span={
+                            section.layout?.direction === "vertical"
+                              ? undefined
+                              : item.span
+                          }
                           submitting={submitting}
                           getActionComponent={getActionComponent}
                           onAction={handleAction}
@@ -116,17 +132,31 @@ export function FormBuilder({
                       <FormFieldRenderer
                         key={`field:${field.name}`}
                         field={field}
-                        column={section.layout?.direction === "vertical" ? undefined : field.column}
-                        span={section.layout?.direction === "vertical" ? undefined : field.span}
+                        column={
+                          section.layout?.direction === "vertical"
+                            ? undefined
+                            : field.column
+                        }
+                        span={
+                          section.layout?.direction === "vertical"
+                            ? undefined
+                            : field.span
+                        }
                         component={component.component}
                         binding={component.binding}
                         options={getFieldOptions(field)}
                         value={values[field.name]}
-                        error={errors[JSON.stringify([activeGroup.id, field.name])]}
+                        error={
+                          errors[JSON.stringify([activeGroup.id, field.name])]
+                        }
                         disabled={fieldActions[field.name].disabled}
                         hidden={fieldActions[field.name].display === "hide"}
-                        onChange={(value) => handleFieldChange(activeGroup.id, field.name, value)}
-                        onBlur={() => handleFieldBlur(activeGroup.id, field.name)}
+                        onChange={(value) =>
+                          handleFieldChange(activeGroup.id, field.name, value)
+                        }
+                        onBlur={() =>
+                          handleFieldBlur(activeGroup.id, field.name)
+                        }
                       />
                     );
                   })}

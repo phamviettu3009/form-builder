@@ -34,7 +34,8 @@ export function FormActions({
     return null;
   }
 
-  const columns = layout?.direction === "vertical" ? 1 : layout?.columns ?? actions.length;
+  const columns =
+    layout?.direction === "vertical" ? 1 : (layout?.columns ?? actions.length);
 
   return (
     <div
@@ -42,11 +43,17 @@ export function FormActions({
       style={{
         gap: layout?.gutter ?? 12,
         gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))`,
-        gridColumn: column ? `${column} / span ${span ?? 1}` : span ? `span ${span}` : undefined,
+        gridColumn: column
+          ? `${column} / span ${span ?? 1}`
+          : span
+            ? `span ${span}`
+            : undefined,
       }}
     >
       {actions.map((action) => {
-        const { component: ActionComponent, binding } = getActionComponent(action.useComponent);
+        const { component: ActionComponent, binding } = getActionComponent(
+          action.useComponent,
+        );
         const typeProp = binding?.actionTypeProp ?? "type";
         return (
           <ActionComponent
@@ -57,10 +64,13 @@ export function FormActions({
             }}
             className={`form-builder-action form-builder-action--${action.placement ?? "secondary"} ${typeof action.props?.className === "string" ? action.props.className : ""}`.trim()}
             disabled={
-              (typeof action.props?.disabled === "boolean" && action.props.disabled) ||
+              (typeof action.props?.disabled === "boolean" &&
+                action.props.disabled) ||
               (submitting && action.loadingWhileSubmitting === true)
             }
-            aria-busy={submitting && action.loadingWhileSubmitting ? true : undefined}
+            aria-busy={
+              submitting && action.loadingWhileSubmitting ? true : undefined
+            }
             onClick={() => onAction(action)}
           >
             {action.props?.children ?? action.label ?? action.id}

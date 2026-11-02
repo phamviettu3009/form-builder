@@ -28,7 +28,10 @@ export class FormValidatorControl {
     );
   };
 
-  getError = (fieldName: string, groupId = this.context.snapshot.activeGroupId): string | undefined => {
+  getError = (
+    fieldName: string,
+    groupId = this.context.snapshot.activeGroupId,
+  ): string | undefined => {
     return this.context.snapshot.errors[groupId]?.[fieldName];
   };
 }

@@ -80,7 +80,10 @@ export interface ResolvedFormSection extends Omit<FormSection, "fields"> {
 }
 
 export type ResolvedFormSectionItem =
-  | { type: "field"; field: FormField & Pick<FormSectionField, "column" | "span"> }
+  | {
+      type: "field";
+      field: FormField & Pick<FormSectionField, "column" | "span">;
+    }
   | { type: "action"; action: FormAction; column?: number; span?: number };
 
 export type FormActionType = "submit" | "reset" | "custom";

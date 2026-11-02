@@ -7,7 +7,11 @@ interface FormSectionRendererProps {
   children: ReactNode;
 }
 
-export function FormSectionRenderer({ section, gutter, children }: FormSectionRendererProps) {
+export function FormSectionRenderer({
+  section,
+  gutter,
+  children,
+}: FormSectionRendererProps) {
   return (
     <section
       className="form-builder-section"

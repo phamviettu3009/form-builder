@@ -33,7 +33,10 @@ interface ValidationTarget {
   field: FormField;
 }
 
-function matchesCondition(condition: Condition, values: Record<string, unknown>): boolean {
+function matchesCondition(
+  condition: Condition,
+  values: Record<string, unknown>,
+): boolean {
   const actualValue = values[condition.name];
   if (
     condition.operator === "lessThan" ||
@@ -64,7 +67,9 @@ function matchesCondition(condition: Condition, values: Record<string, unknown>)
     case "notEquals":
       return actualValue !== condition.value;
     case "in":
-      return Array.isArray(condition.value) && condition.value.includes(actualValue);
+      return (
+        Array.isArray(condition.value) && condition.value.includes(actualValue)
+      );
     case "exists":
       return actualValue !== undefined && actualValue !== null;
   }
@@ -100,7 +105,10 @@ function getValidationErrorKey(groupId: string, fieldName: string): string {
   return JSON.stringify([groupId, fieldName]);
 }
 
-function resolveFieldValue(value: unknown, mapper: Record<string, unknown> | undefined): unknown {
+function resolveFieldValue(
+  value: unknown,
+  mapper: Record<string, unknown> | undefined,
+): unknown {
   if (typeof value !== "string" || !value.startsWith("@")) {
     return value;
   }
@@ -134,7 +142,10 @@ function getFieldActions(
     }
     if (condition.action.display === "remove") {
       actions.display = "remove";
-    } else if (condition.action.display === "hide" && actions.display === "show") {
+    } else if (
+      condition.action.display === "hide" &&
+      actions.display === "show"
+    ) {
       actions.display = "hide";
     }
     actions.disabled ||= condition.action.disable ?? false;
@@ -143,7 +154,10 @@ function getFieldActions(
   return actions;
 }
 
-export function useFormBuilder(schema: FormBuilderSchema, options: UseFormBuilderOptions) {
+export function useFormBuilder(
+  schema: FormBuilderSchema,
+  options: UseFormBuilderOptions,
+) {
   const {
     activeGroupId,
     onActiveGroupChange,
@@ -153,7 +167,10 @@ export function useFormBuilder(schema: FormBuilderSchema, options: UseFormBuilde
     onSubmit,
   } = options;
   const schemaExtractor = useMemo(() => new SchemaExtractor(schema), [schema]);
-  const validator = useMemo(() => new Validator(schemaExtractor), [schemaExtractor]);
+  const validator = useMemo(
+    () => new Validator(schemaExtractor),
+    [schemaExtractor],
+  );
   const componentBuilder = useMemo(
     () => new ComponentBuilder(schemaExtractor),
     [schemaExtractor],
@@ -173,14 +190,19 @@ export function useFormBuilder(schema: FormBuilderSchema, options: UseFormBuilde
   const { groups, fields } = schemaExtractor;
 
   const initialValues = useMemo(
-    () => Object.fromEntries(
-      fields.map((field) => [field.name, resolveFieldValue(field.value, mapper)]),
-    ),
+    () =>
+      Object.fromEntries(
+        fields.map((field) => [
+          field.name,
+          resolveFieldValue(field.value, mapper),
+        ]),
+      ),
     [fields, mapper],
   );
   const initialFocusField = fields.find((field) =>
     field.when?.some(
-      (condition) => condition.action.focus && matchesCondition(condition, initialValues),
+      (condition) =>
+        condition.action.focus && matchesCondition(condition, initialValues),
     ),
   );
   const initialFocusGroup = groups.find((group) =>
@@ -189,36 +211,57 @@ export function useFormBuilder(schema: FormBuilderSchema, options: UseFormBuilde
     ),
   );
   const [values, setValues] = useState<Record<string, unknown>>(initialValues);
-  const [optionOverrides, setOptionOverrides] = useState<Record<string, FormFieldOption[]>>({});
+  const [optionOverrides, setOptionOverrides] = useState<
+    Record<string, FormFieldOption[]>
+  >({});
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [submittedValues, setSubmittedValues] = useState<Record<string, unknown>>();
+  const [submittedValues, setSubmittedValues] =
+    useState<Record<string, unknown>>();
   const [submitError, setSubmitError] = useState<string>();
   const [submitting, setSubmitting] = useState(false);
   const formBuilderRef = useRef<HTMLDivElement>(null);
   const activeAction = useRef<FormAction | undefined>(undefined);
   const cancelledSubmitAction = useRef<string | undefined>(undefined);
   const didRequestInitialFocusGroup = useRef(false);
-  const matchedResetConditions = useRef(getMatchedConditionKeys(fields, initialValues));
-  const previousMappedValues = useRef(new Map(
-    fields
-      .filter((field) => typeof field.value === "string" && field.value.startsWith("@"))
-      .map((field) => [field.name, {
-        reference: field.value,
-        value: resolveFieldValue(field.value, mapper),
-      }]),
-  ));
+  const matchedResetConditions = useRef(
+    getMatchedConditionKeys(fields, initialValues),
+  );
+  const previousMappedValues = useRef(
+    new Map(
+      fields
+        .filter(
+          (field) =>
+            typeof field.value === "string" && field.value.startsWith("@"),
+        )
+        .map((field) => [
+          field.name,
+          {
+            reference: field.value,
+            value: resolveFieldValue(field.value, mapper),
+          },
+        ]),
+    ),
+  );
   const liveValues = useRef(values);
   const liveValidationTimers = useRef(new Map<string, number>());
   const [focusRequest, setFocusRequest] = useState(() =>
-    initialFocusField ? { fieldName: initialFocusField.name, version: 0 } : undefined,
+    initialFocusField
+      ? { fieldName: initialFocusField.name, version: 0 }
+      : undefined,
   );
   const fieldActions = Object.fromEntries(
     fields.map((field) => [field.name, getFieldActions(field.when, values)]),
   );
   const activeGroup = groups.find((group) => group.id === activeGroupId);
   const getFieldOptions = (field: FormField) => {
-    const plugin = pluginRegistry.getPluginByName(field.useComponent, "component");
-    if (plugin.componentBinding?.supportsOptions && Object.hasOwn(optionOverrides, field.name)) {
+    const plugin = pluginRegistry.getPluginByName(
+      field.useComponent,
+      "component",
+    );
+    if (
+      plugin.componentBinding?.supportsOptions &&
+      Object.hasOwn(optionOverrides, field.name)
+    ) {
       return optionOverrides[field.name];
     }
     const resolved = resolveFieldValue(field.options, mapper);
@@ -230,7 +273,10 @@ export function useFormBuilder(schema: FormBuilderSchema, options: UseFormBuilde
     if (!field) {
       throw new Error(`Unknown field: ${fieldName}`);
     }
-    const plugin = pluginRegistry.getPluginByName(field.useComponent, "component");
+    const plugin = pluginRegistry.getPluginByName(
+      field.useComponent,
+      "component",
+    );
     if (!plugin.componentBinding?.supportsOptions) {
       throw new Error(`Field "${fieldName}" does not support options`);
     }
@@ -264,10 +310,17 @@ export function useFormBuilder(schema: FormBuilderSchema, options: UseFormBuilde
     liveValidationTimers.current.clear();
   };
 
-  const scheduleLiveValidation = (groupId: string, name: string, trigger: "onChange" | "onBlur") => {
+  const scheduleLiveValidation = (
+    groupId: string,
+    name: string,
+    trigger: "onChange" | "onBlur",
+  ) => {
     const field = fields.find((item) => item.name === name);
     const config = field?.liveValidation;
-    if (trigger === "onBlur" && (!config?.active || (config.trigger ?? "onChange") !== trigger)) {
+    if (
+      trigger === "onBlur" &&
+      (!config?.active || (config.trigger ?? "onChange") !== trigger)
+    ) {
       return;
     }
     const key = getValidationErrorKey(groupId, name);
@@ -276,17 +329,26 @@ export function useFormBuilder(schema: FormBuilderSchema, options: UseFormBuilde
       window.clearTimeout(pending);
       liveValidationTimers.current.delete(key);
     }
-    if (!field || !config?.active || (config.trigger ?? "onChange") !== trigger) {
+    if (
+      !field ||
+      !config?.active ||
+      (config.trigger ?? "onChange") !== trigger
+    ) {
       return;
     }
-    const delay = Number.isFinite(config.debounce) ? Math.max(0, config.debounce ?? 0) : 0;
+    const delay = Number.isFinite(config.debounce)
+      ? Math.max(0, config.debounce ?? 0)
+      : 0;
     const timeout = window.setTimeout(() => {
       liveValidationTimers.current.delete(key);
       const currentValues = liveValues.current;
       const actions = getFieldActions(field.when, currentValues);
-      const error = actions.display === "show" && !actions.disabled && !actions.ignoreValidation
-        ? validator.getFieldError(field, currentValues[name], currentValues)
-        : undefined;
+      const error =
+        actions.display === "show" &&
+        !actions.disabled &&
+        !actions.ignoreValidation
+          ? validator.getFieldError(field, currentValues[name], currentValues)
+          : undefined;
       setErrors((currentErrors) => {
         const nextErrors = { ...currentErrors };
         if (error) {
@@ -304,14 +366,19 @@ export function useFormBuilder(schema: FormBuilderSchema, options: UseFormBuilde
     cancelLiveValidations();
     liveValues.current = initialValues;
     setValues(initialValues);
-    matchedResetConditions.current = getMatchedConditionKeys(fields, initialValues);
+    matchedResetConditions.current = getMatchedConditionKeys(
+      fields,
+      initialValues,
+    );
     setErrors({});
     setSubmittedValues(undefined);
     setSubmitError(undefined);
     activeAction.current = undefined;
   };
 
-  const getFieldsForGroups = (selectedGroups: typeof groups): ValidationTarget[] =>
+  const getFieldsForGroups = (
+    selectedGroups: typeof groups,
+  ): ValidationTarget[] =>
     selectedGroups.flatMap((group) => {
       const groupFields = new Map<string, FormField>();
       for (const section of group.sections) {
@@ -319,7 +386,10 @@ export function useFormBuilder(schema: FormBuilderSchema, options: UseFormBuilde
           groupFields.set(field.name, field);
         }
       }
-      return [...groupFields.values()].map((field) => ({ groupId: group.id, field }));
+      return [...groupFields.values()].map((field) => ({
+        groupId: group.id,
+        field,
+      }));
     });
 
   const validateFields = (
@@ -335,7 +405,11 @@ export function useFormBuilder(schema: FormBuilderSchema, options: UseFormBuilde
         !fieldActions[field.name].disabled &&
         !fieldActions[field.name].ignoreValidation
       ) {
-        const error = validator.getFieldError(field, values[field.name], values);
+        const error = validator.getFieldError(
+          field,
+          values[field.name],
+          values,
+        );
         if (error) {
           nextErrors[getValidationErrorKey(groupId, field.name)] = error;
         }
@@ -351,7 +425,8 @@ export function useFormBuilder(schema: FormBuilderSchema, options: UseFormBuilde
     });
 
     const firstInvalidTarget = fieldsToValidate.find(
-      ({ groupId, field }) => nextErrors[getValidationErrorKey(groupId, field.name)],
+      ({ groupId, field }) =>
+        nextErrors[getValidationErrorKey(groupId, field.name)],
     );
     if (!firstInvalidTarget) {
       return true;
@@ -394,7 +469,10 @@ export function useFormBuilder(schema: FormBuilderSchema, options: UseFormBuilde
     for (const fieldName of fieldsToReset) {
       nextValues[fieldName] = initialValues[fieldName];
     }
-    matchedResetConditions.current = getMatchedConditionKeys(fields, nextValues);
+    matchedResetConditions.current = getMatchedConditionKeys(
+      fields,
+      nextValues,
+    );
     if (fieldToFocus) {
       const targetFieldName = fieldToFocus;
       const targetGroup = groups.find((group) =>
@@ -413,7 +491,10 @@ export function useFormBuilder(schema: FormBuilderSchema, options: UseFormBuilde
     liveValues.current = nextValues;
     setValues(nextValues);
     setErrors((currentErrors) => {
-      const fieldsWithErrorsToClear = new Set([...Object.keys(updates), ...fieldsToReset]);
+      const fieldsWithErrorsToClear = new Set([
+        ...Object.keys(updates),
+        ...fieldsToReset,
+      ]);
       const keysToClear = Object.keys(currentErrors).filter((key) => {
         const [, fieldName] = JSON.parse(key) as [string, string];
         return fieldsWithErrorsToClear.has(fieldName);
@@ -478,7 +559,11 @@ export function useFormBuilder(schema: FormBuilderSchema, options: UseFormBuilde
     activeAction.current = action;
     if (
       action.confirm &&
-      !window.confirm([action.confirm.title, action.confirm.description].filter(Boolean).join("\n"))
+      !window.confirm(
+        [action.confirm.title, action.confirm.description]
+          .filter(Boolean)
+          .join("\n"),
+      )
     ) {
       cancelledSubmitAction.current = action.id;
       return;
@@ -506,7 +591,9 @@ export function useFormBuilder(schema: FormBuilderSchema, options: UseFormBuilde
     }
 
     if (action.validateBeforeRun !== false) {
-      if (!validateFields(getFieldsForGroups(getValidationGroups(action)), true)) {
+      if (
+        !validateFields(getFieldsForGroups(getValidationGroups(action)), true)
+      ) {
         return;
       }
     } else {
@@ -517,7 +604,9 @@ export function useFormBuilder(schema: FormBuilderSchema, options: UseFormBuilde
     setSubmitError(undefined);
     try {
       const valuesToSubmit = Object.fromEntries(
-        Object.entries(values).filter(([name]) => fieldActions[name]?.display !== "remove"),
+        Object.entries(values).filter(
+          ([name]) => fieldActions[name]?.display !== "remove",
+        ),
       );
       await onSubmit?.(valuesToSubmit);
       setSubmittedValues(valuesToSubmit);
@@ -533,17 +622,28 @@ export function useFormBuilder(schema: FormBuilderSchema, options: UseFormBuilde
 
   useEffect(() => {
     const mappedEntries = fields
-      .filter((field) => typeof field.value === "string" && field.value.startsWith("@"))
-      .map((field) => [field.name, {
-        reference: field.value,
-        value: resolveFieldValue(field.value, mapper),
-      }] as const);
+      .filter(
+        (field) =>
+          typeof field.value === "string" && field.value.startsWith("@"),
+      )
+      .map(
+        (field) =>
+          [
+            field.name,
+            {
+              reference: field.value,
+              value: resolveFieldValue(field.value, mapper),
+            },
+          ] as const,
+      );
     const nextValues = { ...liveValues.current };
     const changedFieldNames: string[] = [];
     for (const [name, mapped] of mappedEntries) {
       const previous = previousMappedValues.current.get(name);
       if (
-        (!previous || previous.reference !== mapped.reference || !Object.is(previous.value, mapped.value)) &&
+        (!previous ||
+          previous.reference !== mapped.reference ||
+          !Object.is(previous.value, mapped.value)) &&
         !Object.is(nextValues[name], mapped.value)
       ) {
         nextValues[name] = mapped.value;
@@ -555,7 +655,10 @@ export function useFormBuilder(schema: FormBuilderSchema, options: UseFormBuilde
       return;
     }
     cancelLiveValidations();
-    matchedResetConditions.current = getMatchedConditionKeys(fields, nextValues);
+    matchedResetConditions.current = getMatchedConditionKeys(
+      fields,
+      nextValues,
+    );
     liveValues.current = nextValues;
     // Synchronize mapper props into the editable form state.
     // oxlint-disable-next-line react/set-state-in-effect
@@ -592,12 +695,18 @@ export function useFormBuilder(schema: FormBuilderSchema, options: UseFormBuilde
     }
     const timeout = window.setTimeout(() => {
       const fieldContainer = Array.from(
-        formBuilderRef.current?.querySelectorAll<HTMLElement>("[data-field-name]") ?? [],
+        formBuilderRef.current?.querySelectorAll<HTMLElement>(
+          "[data-field-name]",
+        ) ?? [],
       ).find((element) => element.dataset.fieldName === focusRequest.fieldName);
       const focusable = fieldContainer?.querySelector<HTMLElement>(
         "input:not(:disabled), textarea:not(:disabled), select:not(:disabled), button:not(:disabled), [tabindex]:not([tabindex='-1'])",
       );
-      if (focusable && fieldContainer && getComputedStyle(fieldContainer).visibility !== "hidden") {
+      if (
+        focusable &&
+        fieldContainer &&
+        getComputedStyle(fieldContainer).visibility !== "hidden"
+      ) {
         focusable.focus();
       }
     }, 0);
@@ -658,7 +767,9 @@ export function useFormBuilder(schema: FormBuilderSchema, options: UseFormBuilde
             (target) => target.field.name === fieldName,
           );
           if (targets.length === 0) {
-            throw new Error(`Unknown field "${fieldName}" in the requested group`);
+            throw new Error(
+              `Unknown field "${fieldName}" in the requested group`,
+            );
           }
           return validateFields(targets, false);
         },

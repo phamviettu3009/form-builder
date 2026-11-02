@@ -1,4 +1,5 @@
 import type { FormPlugin, PluginDefinitions } from "./types";
+import { PLUGIN_NAME } from "./plugin-metadata.ts";
 
 type PluginType = keyof PluginDefinitions;
 type PluginStores = {
@@ -14,9 +15,19 @@ class PluginRegistry {
 
   register<Type extends PluginType>(
     type: Type,
-    plugin: FormPlugin<PluginDefinitions[Type]>,
+    plugin: Omit<FormPlugin<PluginDefinitions[Type]>, "name"> & {
+      name?: string;
+    },
   ): void {
-    this.plugins[type].set(plugin.name, plugin);
+    const name = getPluginName(plugin.class) ?? plugin.name;
+    if (!name) {
+      throw new Error(`Plugin name is required for type: ${type}`);
+    }
+
+    const registeredPlugin = { ...plugin, name } as FormPlugin<
+      PluginDefinitions[Type]
+    >;
+    this.plugins[type].set(name, registeredPlugin);
   }
 
   getPluginByName<Type extends PluginType>(
@@ -38,3 +49,14 @@ class PluginRegistry {
 }
 
 export const pluginRegistry = new PluginRegistry();
+
+function getPluginName(pluginClass: unknown): string | undefined {
+  if (typeof pluginClass !== "function") {
+    return undefined;
+  }
+
+  const name = (
+    pluginClass as Function & { [PLUGIN_NAME]?: unknown }
+  )[PLUGIN_NAME];
+  return typeof name === "string" && name.length > 0 ? name : undefined;
+}

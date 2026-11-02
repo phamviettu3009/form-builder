@@ -20,7 +20,9 @@ export class ComponentBuilder {
 
   private loadAllComponents(schema: SchemaExtractor): void {
     const registeredComponents = new Map(
-      pluginRegistry.getAllPlugins("component").map((plugin) => [plugin.name, plugin.class]),
+      pluginRegistry
+        .getAllPlugins("component")
+        .map((plugin) => [plugin.name, plugin.class]),
     );
 
     for (const type of schema.componentTypes) {

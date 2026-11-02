@@ -34,7 +34,9 @@ export class Validator {
     for (const validation of field.validations ?? []) {
       const ruleName = validation.rule ?? validation.type;
       if (!ruleName) {
-        throw new Error(`Validation rule type is required for field: ${field.name}`);
+        throw new Error(
+          `Validation rule type is required for field: ${field.name}`,
+        );
       }
 
       const rule = this.rules.get(ruleName);
@@ -52,14 +54,18 @@ export class Validator {
 
   private loadAllValidationRules(): void {
     const registeredRules = new Map(
-      pluginRegistry.getAllPlugins("validation").map((plugin) => [plugin.name, plugin.class]),
+      pluginRegistry
+        .getAllPlugins("validation")
+        .map((plugin) => [plugin.name, plugin.class]),
     );
 
     for (const field of this.schema.validationFields) {
       for (const validation of field.validations ?? []) {
         const ruleName = validation.rule ?? validation.type;
         if (!ruleName) {
-          throw new Error(`Validation rule type is required for field: ${field.name}`);
+          throw new Error(
+            `Validation rule type is required for field: ${field.name}`,
+          );
         }
         if (this.rules.has(ruleName)) {
           continue;

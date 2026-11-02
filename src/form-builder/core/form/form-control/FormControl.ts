@@ -1,5 +1,8 @@
 import { FormControlContext } from "./FormControlContext";
-import type { FormControlOperations, FormControlSnapshot } from "./FormControlContext";
+import type {
+  FormControlOperations,
+  FormControlSnapshot,
+} from "./FormControlContext";
 import { FormFieldControl } from "./FormFieldControl";
 import { FormGroupControl } from "./FormGroupControl";
 import { FormValidatorControl } from "./FormValidatorControl";
@@ -16,7 +19,10 @@ export class FormControl {
     this.context.requireOperations().reset();
   }
 
-  connect(snapshot: FormControlSnapshot, operations: FormControlOperations): void {
+  connect(
+    snapshot: FormControlSnapshot,
+    operations: FormControlOperations,
+  ): void {
     this.context.connect(snapshot, operations);
   }
 

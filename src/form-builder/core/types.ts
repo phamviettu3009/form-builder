@@ -4,6 +4,7 @@ import type { Rule } from "./validator/rule";
 export type RuleConstructor = new () => Rule;
 
 export interface ComponentBinding {
+  child?: ElementType;
   valueProp?: string;
   eventValueProp?: string;
   invalidProp?: string;

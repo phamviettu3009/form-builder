@@ -18,17 +18,18 @@ interface FormFieldRendererProps {
 }
 
 function normalizeChangeValue(value: unknown, eventValueProp: string): unknown {
-  if (
-    typeof value === "object" &&
-    value !== null &&
-    "target" in value &&
-    typeof value.target === "object" &&
-    value.target !== null
-  ) {
-    const target = value.target;
-    return eventValueProp in target
-      ? (target as Record<string, unknown>)[eventValueProp]
-      : value;
+  if (typeof value === "object" && value !== null) {
+    if (
+      "target" in value &&
+      typeof value.target === "object" &&
+      value.target !== null &&
+      eventValueProp in value.target
+    ) {
+      return (value.target as Record<string, unknown>)[eventValueProp];
+    }
+    if (eventValueProp in value) {
+      return (value as Record<string, unknown>)[eventValueProp];
+    }
   }
 
   return value;
@@ -54,14 +55,24 @@ export function FormFieldRenderer({
   const label = (
     <label className="form-builder-label" htmlFor={fieldId}>
       {field.label}
-      {field.required && <span className="form-builder-label__required" aria-hidden="true">*</span>}
+      {field.required && (
+        <span className="form-builder-label__required" aria-hidden="true">
+          *
+        </span>
+      )}
     </label>
   );
 
   return (
     <div
       className={`form-builder-field form-builder-field--label-${labelPosition}${hidden ? " form-builder-field--hidden" : ""}`}
-      style={{ gridColumn: column ? `${column} / span ${span ?? 1}` : span ? `span ${span}` : undefined }}
+      style={{
+        gridColumn: column
+          ? `${column} / span ${span ?? 1}`
+          : span
+            ? `span ${span}`
+            : undefined,
+      }}
       aria-hidden={hidden}
       data-field-name={field.name}
       onBlur={(event) => {
@@ -74,15 +85,25 @@ export function FormFieldRenderer({
         {labelPosition === "before" && label}
         <FieldComponent
           {...(field.props ?? {})}
+          {...(binding?.child ? { child: binding.child } : {})}
           id={fieldId}
           {...{ [binding?.valueProp ?? "value"]: value }}
-          {...(binding?.invalidProp ? { [binding.invalidProp]: Boolean(error) } : {})}
-          {...(binding?.errorMessageProp ? { [binding.errorMessageProp]: error } : {})}
+          {...(binding?.invalidProp
+            ? { [binding.invalidProp]: Boolean(error) }
+            : {})}
+          {...(binding?.errorMessageProp
+            ? { [binding.errorMessageProp]: error }
+            : {})}
           placeholder={field.placeholder}
           options={options}
           disabled={disabled || hidden}
           onChange={(nextValue: unknown) =>
-            onChange(normalizeChangeValue(nextValue, binding?.eventValueProp ?? "value"))
+            onChange(
+              normalizeChangeValue(
+                nextValue,
+                binding?.eventValueProp ?? "value",
+              ),
+            )
           }
           aria-invalid={Boolean(error)}
           {...(field.required ? { "aria-required": true } : {})}

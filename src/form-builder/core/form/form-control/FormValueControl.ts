@@ -43,7 +43,9 @@ export class FormValueControl {
     listener?: (value: unknown) => void,
   ): (() => void) => {
     if (typeof fieldNameOrListener === "function") {
-      return this.context.subscribeValues((values) => fieldNameOrListener({ ...values }));
+      return this.context.subscribeValues((values) =>
+        fieldNameOrListener({ ...values }),
+      );
     }
     if (!listener) {
       throw new Error("A listener is required when watching a field");

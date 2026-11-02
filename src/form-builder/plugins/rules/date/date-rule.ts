@@ -1,5 +1,7 @@
-import type { Rule } from "../../core/validator/rule";
+import type { Rule } from "../../../core/validator/rule.ts";
+import { Plugin } from "../../../core/plugin-metadata.ts";
 
+@Plugin("date")
 export class DateRule implements Rule {
   validate(value: unknown): boolean {
     if (value === undefined || value === null || value === "") {
